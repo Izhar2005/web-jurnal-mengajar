@@ -1,0 +1,13 @@
+Placeholder: file not yet converted to PNG.
+
+This is a text placeholder named architecture.png because SVG-to-PNG conversion tools are not available in this environment.
+
+To generate a proper PNG locally, install ImageMagick or librsvg and run one of the commands below:
+
+ImageMagick (Windows / PowerShell):
+choco install imagemagick -y
+magick docs/architecture.svg docs/architecture.png
+
+librsvg (WSL / Linux):
+sudo apt install librsvg2-bin
+rsvg-convert -o docs/architecture.png docs/architecture.svg

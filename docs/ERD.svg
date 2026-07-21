@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="600" viewBox="0 0 1000 600">
+  <style>
+    .box{fill:#ffffff;stroke:#111827;stroke-width:2;rx:6;}
+    .title{font: bold 14px sans-serif; fill:#111827}
+    .field{font: 12px monospace; fill:#111827}
+    .rel{stroke:#111827;stroke-width:1.5;marker-end:url(#arrow)}
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L6,3 z" fill="#111827" />
+    </marker>
+  </defs>
+
+  <!-- Users -->
+  <rect class="box" x="40" y="40" width="240" height="140" rx="8"/>
+  <text class="title" x="60" y="64">Users</text>
+  <text class="field" x="60" y="90">- id : number</text>
+  <text class="field" x="60" y="110">- nama : string</text>
+  <text class="field" x="60" y="130">- email : string (unique)</text>
+  <text class="field" x="60" y="150">- role : enum</text>
+
+  <!-- JournalEntry -->
+  <rect class="box" x="360" y="40" width="260" height="160" rx="8"/>
+  <text class="title" x="380" y="64">JournalEntry</text>
+  <text class="field" x="380" y="90">- id : number</text>
+  <text class="field" x="380" y="110">- tanggal : date</text>
+  <text class="field" x="380" y="130">- kelas, mapel, materi, metode</text>
+  <text class="field" x="380" y="150">- catatan : text</text>
+  <text class="field" x="380" y="170">- authorEmail : string -> Users.email</text>
+
+  <!-- Students -->
+  <rect class="box" x="40" y="220" width="260" height="120" rx="8"/>
+  <text class="title" x="60" y="244">StudentRecord</text>
+  <text class="field" x="60" y="270">- id : number</text>
+  <text class="field" x="60" y="290">- nama : string</text>
+  <text class="field" x="60" y="310">- nis : string (unique)</text>
+  <text class="field" x="60" y="330">- kelas, status, waliKelas</text>
+
+  <!-- BkCase -->
+  <rect class="box" x="360" y="240" width="300" height="160" rx="8"/>
+  <text class="title" x="380" y="264">BkCase</text>
+  <text class="field" x="380" y="290">- id : number</text>
+  <text class="field" x="380" y="310">- nama, nis -> StudentRecord.nis</text>
+  <text class="field" x="380" y="330">- kelas, kasus, tindakLanjut</text>
+  <text class="field" x="380" y="350">- status, tanggal, penanggungJawab</text>
+
+  <!-- ActivityLog -->
+  <rect class="box" x="700" y="40" width="240" height="120" rx="8"/>
+  <text class="title" x="720" y="64">ActivityLog</text>
+  <text class="field" x="720" y="90">- id : number</text>
+  <text class="field" x="720" y="110">- userEmail : string -> Users.email</text>
+  <text class="field" x="720" y="130">- action, timestamp</text>
+
+  <!-- Relationships (arrows) -->
+  <line class="rel" x1="610" y1="150" x2="700" y2="110" />
+  <text class="field" x="620" y="140">authorEmail → user</text>
+
+  <line class="rel" x1="200" y1="260" x2="430" y2="300" />
+  <text class="field" x="240" y="280">nis → student</text>
+
+  <line class="rel" x1="180" y1="180" x2="180" y2="220" />
+  <text class="field" x="120" y="200">waliKelas (name) → Users</text>
+
+  <line class="rel" x1="280" y1="100" x2="360" y2="100" />
+  <text class="field" x="300" y="88">authorEmail</text>
+
+</svg>
