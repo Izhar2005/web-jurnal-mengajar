@@ -46,9 +46,7 @@ export const Route = createFileRoute("/")({
 
 // ============================================================
 // Neo-Brutalism Teaching Journal — Single Page App
-// Semua styling didefinisikan sebagai object CSSProperties agar
-// tidak bergantung pada konfigurasi Tailwind proyek.
-// ============================================================
+
 
 type ModuleKey = "jurnal" | "bk" | "kesiswaan" | "pengguna";
 
@@ -81,6 +79,7 @@ const SEED: JournalEntry[] = [
     materi: "Aljabar Linear Dasar",
     metode: "Diskusi",
     catatan: "Siswa antusias, 2 anak kesulitan pada soal cerita.",
+    authorEmail: "guru@sekolah.test",
   },
   {
     id: 2,
@@ -107,6 +106,7 @@ const SEED: JournalEntry[] = [
 function Index() {
   const [activeModule, setActiveModule] = useState<ModuleKey>("jurnal");
   const [tab, setTab] = useState<"input" | "riwayat" | "rekap">("input");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [bkCases, setBkCases] = useState<BkCase[]>([]);
   const [students, setStudents] = useState<StudentRecord[]>([]);
@@ -174,6 +174,7 @@ function Index() {
 
   function handleDeleteJournal(id: number) {
     if (!sessionUser) return;
+    if (!window.confirm("Yakin ingin menghapus jurnal ini?")) return;
     void deleteJournalEntry(id, sessionUser.email).then((ok) => {
       if (ok) {
         setEntries((prev) => prev.filter((item) => item.id !== id));
@@ -190,6 +191,14 @@ function Index() {
       setToast("DATA BK BERHASIL DISIMPAN");
       window.setTimeout(() => setToast(null), 2500);
     });
+  }
+
+  function handleSubmitUser(entry: Omit<User, "id">) {
+    if (!sessionUser) return;
+    const newUser: User = { ...entry, id: Date.now() };
+    setUsers((prev) => [newUser, ...prev]);
+    setToast("PENGGUNA BARU DITAMBAHKAN");
+    window.setTimeout(() => setToast(null), 2500);
   }
 
   function handleSubmitStudent(entry: Omit<StudentRecord, "id">) {
@@ -250,7 +259,7 @@ function Index() {
           <form onSubmit={handleLogin} style={{ display: "grid", gap: 14, marginTop: 20 }}>
             <div>
               <label style={labelStyle}>Email</label>
-              <input style={inputStyle} value={loginForm.email} onChange={(e) => setLoginForm((prev) => ({ ...prev, email: e.target.value }))} />
+              <input type="email" style={inputStyle} value={loginForm.email} onChange={(e) => setLoginForm((prev) => ({ ...prev, email: e.target.value }))} />
             </div>
             <div>
               <label style={labelStyle}>Password</label>
@@ -286,7 +295,7 @@ function Index() {
         href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap"
       />
 
-      <Sidebar activeModule={activeModule} setActiveModule={setActiveModule} accessibleModules={accessibleModules} />
+      <Sidebar activeModule={activeModule} setActiveModule={setActiveModule} accessibleModules={accessibleModules} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <main style={{ flex: 1, padding: 32, minWidth: 0 }}>
         <Header activeModule={activeModule} sessionUser={sessionUser} onLogout={handleLogout} />
@@ -316,11 +325,11 @@ function Index() {
             </div>
           </>
         ) : activeModule === "bk" ? (
-          <BimbinganKonselingPage onSubmit={handleSubmitBk} />
+          <BimbinganKonselingPage onSubmit={handleSubmitBk} bkCases={bkCases} />
         ) : activeModule === "kesiswaan" ? (
           <DataKesiswaanPage onSubmit={handleSubmitStudent} students={students} onDelete={handleDeleteStudent} />
         ) : (
-          <ManajemenPenggunaPage users={users} />
+          <ManajemenPenggunaPage users={users} onSubmit={handleSubmitUser} />
         )}
       </main>
 
@@ -334,10 +343,14 @@ function Sidebar({
   activeModule,
   setActiveModule,
   accessibleModules,
+  sidebarOpen,
+  setSidebarOpen,
 }: {
   activeModule: ModuleKey;
   setActiveModule: (module: ModuleKey) => void;
   accessibleModules: readonly ModuleKey[];
+  sidebarOpen: boolean;
+  setSidebarOpen: (v: boolean) => void;
 }) {
   const items: { id: ModuleKey; label: string }[] = [
     { id: "jurnal", label: "JURNAL MENGAJAR" },
@@ -349,10 +362,10 @@ function Sidebar({
   return (
     <aside
       style={{
-        width: 280,
+        width: sidebarOpen ? 280 : 56,
         background: BLACK,
         color: "#fff",
-        padding: 24,
+        padding: sidebarOpen ? 24 : "24px 8px",
         borderRight: BORDER,
         display: "flex",
         flexDirection: "column",
@@ -360,8 +373,17 @@ function Sidebar({
         position: "sticky",
         top: 0,
         height: "100vh",
+        overflow: "hidden",
+        transition: "width 0.2s ease",
       }}
     >
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        style={{ background: "none", border: "2px solid #fff", color: "#fff", cursor: "pointer", fontFamily: fontDisplay, padding: "4px 8px", alignSelf: "flex-start" }}
+        aria-label="toggle sidebar"
+      >
+        ☰
+      </button>
       <div
         style={{
           background: NEON.yellow,
@@ -603,12 +625,22 @@ function TabBar({
 }
 
 // ---------- MODULE CONTENT -------------------------------------------------
-function BimbinganKonselingPage({ onSubmit }: { onSubmit: (entry: Omit<BkCase, "id">) => void }) {
-  const agenda = [
-    "Konseling individu untuk siswa kelas VIII-B",
-    "Pendampingan orang tua terkait perubahan perilaku",
-    "Rapat koordinasi dengan wali kelas pukul 13.00",
-  ];
+function BimbinganKonselingPage({ onSubmit, bkCases }: { onSubmit: (entry: Omit<BkCase, "id">) => void; bkCases: BkCase[] }) {
+  const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState("");
+  const [form, setForm] = useState({ nama: "", nis: "", kelas: "", kasus: "", tindakLanjut: "", status: "Baru", tanggal: new Date().toISOString().slice(0, 10), penanggungJawab: "" });
+
+  const filtered = bkCases.filter((c) =>
+    c.nama.toLowerCase().includes(search.toLowerCase()) ||
+    c.kasus.toLowerCase().includes(search.toLowerCase())
+  );
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    onSubmit(form);
+    setForm({ nama: "", nis: "", kelas: "", kasus: "", tindakLanjut: "", status: "Baru", tanggal: new Date().toISOString().slice(0, 10), penanggungJawab: "" });
+    setShowForm(false);
+  }
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -631,33 +663,65 @@ function BimbinganKonselingPage({ onSubmit }: { onSubmit: (entry: Omit<BkCase, "
         </div>
       </Card>
 
-      <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-        <Card>
-          <SectionTitle text="AGENDA HARI INI" accent={NEON.yellow} />
-          <ul style={{ paddingLeft: 18, fontFamily: fontMono, fontSize: 13, lineHeight: 1.8, marginTop: 16 }}>
-            {agenda.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </Card>
+      <Card>
+        <SectionTitle text="DAFTAR KASUS BK" accent={NEON.lime} />
+        <div style={{ marginTop: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <input
+            placeholder="Cari nama atau kasus..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ ...inputStyle, maxWidth: 320 }}
+          />
+          <button
+            onClick={() => setShowForm(!showForm)}
+            style={{ padding: "10px 16px", background: NEON.lime, border: BORDER, cursor: "pointer", fontFamily: fontDisplay, fontSize: 13 }}
+          >
+            ▶ TAMBAH KASUS BK
+          </button>
+        </div>
 
-        <Card>
-          <SectionTitle text="CATATAN TIM BK" accent={NEON.lime} />
-          <p style={{ marginTop: 16, fontFamily: fontBody, fontSize: 14, lineHeight: 1.7 }}>
-            Fokus utama minggu ini adalah peningkatan kedisiplinan, pencatatan absensi, dan pemantauan siswa dengan perubahan performa akademik.
-          </p>
-        </Card>
-      </div>
+        {showForm && (
+          <form onSubmit={handleSubmit} style={{ marginTop: 16, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+            <div><label style={labelStyle}>Nama Siswa *</label><input placeholder="Nama Siswa" style={inputStyle} value={form.nama} onChange={(e) => setForm((f) => ({ ...f, nama: e.target.value }))} required /></div>
+            <div><label style={labelStyle}>NIS *</label><input placeholder="NIS" style={inputStyle} value={form.nis} onChange={(e) => setForm((f) => ({ ...f, nis: e.target.value }))} required /></div>
+            <div><label style={labelStyle}>Kelas *</label><input placeholder="Kelas" style={inputStyle} value={form.kelas} onChange={(e) => setForm((f) => ({ ...f, kelas: e.target.value }))} required /></div>
+            <div><label style={labelStyle}>Kasus *</label><input placeholder="Kasus" style={inputStyle} value={form.kasus} onChange={(e) => setForm((f) => ({ ...f, kasus: e.target.value }))} required /></div>
+            <div><label style={labelStyle}>Tindak Lanjut</label><input placeholder="Tindak Lanjut" style={inputStyle} value={form.tindakLanjut} onChange={(e) => setForm((f) => ({ ...f, tindakLanjut: e.target.value }))} /></div>
+            <div><label style={labelStyle}>Penanggung Jawab</label><input placeholder="Penanggung Jawab" style={inputStyle} value={form.penanggungJawab} onChange={(e) => setForm((f) => ({ ...f, penanggungJawab: e.target.value }))} /></div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <button type="submit" style={{ padding: "12px 20px", background: NEON.lime, border: BORDER, cursor: "pointer", fontFamily: fontDisplay, fontSize: 14 }}>▶ SIMPAN</button>
+            </div>
+          </form>
+        )}
+
+        <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+          {filtered.length === 0 && <div style={{ fontFamily: fontMono, fontSize: 13, opacity: 0.6 }}>Tidak ada data kasus.</div>}
+          {filtered.map((c) => (
+            <div key={c.id} style={{ border: BORDER, padding: 12 }}>
+              <div style={{ fontFamily: fontDisplay, fontSize: 14 }}>{c.nama} — {c.kelas}</div>
+              <div style={{ fontFamily: fontMono, fontSize: 12, marginTop: 4 }}>NIS: {c.nis} | Kasus: {c.kasus}</div>
+              <div style={{ fontFamily: fontMono, fontSize: 12, marginTop: 4 }}>Status: <strong>{c.status}</strong> | {c.tanggal}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }
 
 function DataKesiswaanPage({ onSubmit, students, onDelete }: { onSubmit: (entry: Omit<StudentRecord, "id">) => void; students: StudentRecord[]; onDelete?: (id: number) => void }) {
+  const [search, setSearch] = useState("");
   const items = [
     "Kelas VII-A: 32 siswa",
     "Kelas VIII-B: 30 siswa",
     "Kehadiran rata-rata minggu ini: 97%",
   ];
+
+  const filtered = students.filter((s) =>
+    s.nama.toLowerCase().includes(search.toLowerCase()) ||
+    s.nis.includes(search) ||
+    s.kelas.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -690,12 +754,22 @@ function DataKesiswaanPage({ onSubmit, students, onDelete }: { onSubmit: (entry:
 
       <Card>
         <SectionTitle text="DAFTAR SISWA" accent={NEON.yellow} />
-        <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
-          {students.map((student) => (
+        <div style={{ marginTop: 12, marginBottom: 16 }}>
+          <input
+            placeholder="Cari nama, NIS, atau kelas..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ ...inputStyle, maxWidth: 360 }}
+          />
+        </div>
+        <div style={{ display: "grid", gap: 12 }}>
+          {filtered.length === 0 && <div style={{ fontFamily: fontMono, fontSize: 13, opacity: 0.6 }}>Tidak ada data siswa.</div>}
+          {filtered.map((student) => (
             <div key={student.id} style={{ border: BORDER, padding: 12, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontFamily: fontDisplay, fontSize: 14 }}>{student.nama}</div>
                 <div style={{ fontFamily: fontMono, fontSize: 12, marginTop: 4 }}>NIS: {student.nis} • Kelas: {student.kelas}</div>
+                <span style={{ display: "inline-block", marginTop: 4, fontFamily: fontMono, fontSize: 11, background: student.status === "Aktif" ? NEON.lime : NEON.orange, border: BORDER, padding: "2px 8px" }}>{student.status}</span>
               </div>
               <button onClick={() => onDelete?.(student.id)} style={{ background: NEON.orange, border: BORDER, padding: "8px 10px", fontFamily: fontDisplay, cursor: "pointer" }}>HAPUS</button>
             </div>
@@ -706,12 +780,14 @@ function DataKesiswaanPage({ onSubmit, students, onDelete }: { onSubmit: (entry:
   );
 }
 
-function ManajemenPenggunaPage({ users }: { users: User[] }) {
-  const roles = [
-    "Admin: 2 akun",
-    "Guru: 18 akun",
-    "Staf: 7 akun",
-  ];
+function ManajemenPenggunaPage({ users, onSubmit }: { users: User[]; onSubmit: (entry: Omit<User, "id">) => void }) {
+  const [form, setForm] = useState({ nama: "", email: "", password: "", role: "guru" as User["role"] });
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    onSubmit(form);
+    setForm({ nama: "", email: "", password: "", role: "guru" });
+  }
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -720,7 +796,7 @@ function ManajemenPenggunaPage({ users }: { users: User[] }) {
         <div style={{ marginTop: 18, display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
           <div style={{ border: BORDER, padding: 16, background: NEON.orange }}>
             <div style={{ fontFamily: fontDisplay, fontSize: 12, letterSpacing: 1 }}>TOTAL AKUN</div>
-            <div style={{ fontFamily: fontDisplay, fontSize: 28, marginTop: 8 }}>27</div>
+            <div style={{ fontFamily: fontDisplay, fontSize: 28, marginTop: 8 }}>{users.length}</div>
           </div>
           <div style={{ border: BORDER, padding: 16, background: "#fff" }}>
             <div style={{ fontFamily: fontDisplay, fontSize: 12, letterSpacing: 1 }}>AKSES TERBARU</div>
@@ -733,12 +809,39 @@ function ManajemenPenggunaPage({ users }: { users: User[] }) {
       </Card>
 
       <Card>
-        <SectionTitle text="DAFTAR ROLE" accent={NEON.pink} />
-        <ul style={{ paddingLeft: 18, fontFamily: fontMono, fontSize: 13, lineHeight: 1.8, marginTop: 16 }}>
-          {roles.map((item) => (
-            <li key={item}>{item}</li>
+        <SectionTitle text="TAMBAH PENGGUNA BARU" accent={NEON.pink} />
+        <form onSubmit={handleSubmit} style={{ marginTop: 16, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+          <div><label style={labelStyle}>Nama *</label><input placeholder="Nama Lengkap" style={inputStyle} value={form.nama} onChange={(e) => setForm((f) => ({ ...f, nama: e.target.value }))} required /></div>
+          <div><label style={labelStyle}>Email *</label><input type="email" placeholder="email@sekolah.test" style={inputStyle} value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required /></div>
+          <div><label style={labelStyle}>Password *</label><input type="password" placeholder="Password" style={inputStyle} value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} required /></div>
+          <div>
+            <label style={labelStyle}>Role *</label>
+            <select style={inputStyle} value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as User["role"] }))}>
+              <option value="admin">admin</option>
+              <option value="guru">guru</option>
+              <option value="bk">bk</option>
+              <option value="wali">wali</option>
+              <option value="siswa">siswa</option>
+            </select>
+          </div>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <button type="submit" style={{ padding: "12px 20px", background: NEON.lime, border: BORDER, cursor: "pointer", fontFamily: fontDisplay, fontSize: 14 }}>▶ TAMBAH PENGGUNA</button>
+          </div>
+        </form>
+      </Card>
+
+      <Card>
+        <SectionTitle text="DAFTAR PENGGUNA" accent={NEON.yellow} />
+        <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+          {users.map((u) => (
+            <div key={u.id} style={{ border: BORDER, padding: 12, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontFamily: fontDisplay, fontSize: 14 }}>{u.nama}</div>
+                <div style={{ fontFamily: fontMono, fontSize: 12, marginTop: 4 }}>{u.email} • Role: <strong>{u.role}</strong></div>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       </Card>
     </div>
   );
@@ -793,7 +896,7 @@ const labelStyle: CSSProperties = {
 function FormJurnal({
   onSubmit,
 }: {
-  onSubmit: (entry: Omit<JournalEntry, "id">) => void;
+  onSubmit: (entry: Omit<JournalEntry, "id" | "authorEmail">) => void;
 }) {
   const [form, setForm] = useState({
     kelas: "",
@@ -804,19 +907,26 @@ function FormJurnal({
     catatan: "",
   });
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [dateError, setDateError] = useState<string | null>(null);
   const [pressed, setPressed] = useState(false);
 
   function update<K extends keyof typeof form>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
     if (errors[k as string]) setErrors((e) => ({ ...e, [k]: false }));
+    if (k === "tanggal") setDateError(null);
   }
 
   function submit(e: FormEvent) {
     e.preventDefault();
+    setDateError(null);
     const newErrors: Record<string, boolean> = {};
     (Object.keys(form) as (keyof typeof form)[]).forEach((k) => {
       if (!form[k].trim()) newErrors[k] = true;
     });
+    if (form.tanggal && form.tanggal > new Date().toISOString().slice(0, 10)) {
+      setDateError("Tanggal tidak boleh masa depan (future date).");
+      return;
+    }
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
     onSubmit(form);
@@ -950,6 +1060,20 @@ function FormJurnal({
               ! FIELD KOSONG TERDETEKSI
             </span>
           )}
+          {dateError && (
+            <span
+              style={{
+                background: "#B00020",
+                color: "#fff",
+                padding: "6px 10px",
+                fontFamily: fontMono,
+                fontSize: 12,
+                border: BORDER,
+              }}
+            >
+              ! {dateError}
+            </span>
+          )}
         </div>
       </form>
     </Card>
@@ -1030,6 +1154,25 @@ function RiwayatJurnal({
         >
           TOTAL: {data.length} ENTRI
         </div>
+        <button
+          onClick={() => {
+            const rows = data.map((r) => `${r.tanggal},${r.kelas},${r.mapel},"${r.materi}","${r.metode}","${r.catatan}"`);
+            const csv = ["tanggal,kelas,mapel,materi,metode,catatan", ...rows].join("\n");
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+            a.download = "jurnal-export.csv";
+            a.click();
+          }}
+          style={{ padding: "8px 14px", background: NEON.lime, border: BORDER, cursor: "pointer", fontFamily: fontDisplay, fontSize: 12, alignSelf: "flex-end" }}
+        >
+          ▶ EXPORT CSV
+        </button>
+        <button
+          onClick={() => window.print()}
+          style={{ padding: "8px 14px", background: NEON.pink, border: BORDER, cursor: "pointer", fontFamily: fontDisplay, fontSize: 12, alignSelf: "flex-end" }}
+        >
+          ▶ PRINT / PDF
+        </button>
       </div>
 
       <div style={{ marginTop: 20, overflowX: "auto" }}>

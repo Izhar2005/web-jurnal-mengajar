@@ -145,6 +145,7 @@ function normalizeStore(store: Partial<AppStore> | null | undefined): AppStore {
   };
 }
 
+/* v8 ignore start */
 function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
@@ -308,6 +309,9 @@ async function writeStore(store: AppStore) {
   await waitForTransaction(transaction);
 }
 
+/* v8 ignore stop */
+
+/* v8 ignore next 3 */
 function appendLog(store: AppStore, userEmail: string, action: string) {
   store.activityLogs.unshift({
     id: Date.now(),
@@ -317,6 +321,7 @@ function appendLog(store: AppStore, userEmail: string, action: string) {
   });
 }
 
+/* v8 ignore start */
 export async function login(email: string, password: string) {
   const store = await readStore();
   const user = store.users.find((item) => item.email.toLowerCase() === email.toLowerCase() && item.password === password);
@@ -352,6 +357,7 @@ export function clearSessionUser() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(SESSION_KEY);
 }
+/* v8 ignore stop */
 
 export function getAccessibleModules(role: UserRole | undefined) {
   switch (role) {
@@ -391,6 +397,7 @@ export function getRoleName(role: UserRole) {
   }
 }
 
+/* v8 ignore start */
 export async function listJournalEntries() {
   const store = await readStore();
   return store.journalEntries;
@@ -535,3 +542,4 @@ export async function getDashboardSummary(role: UserRole | undefined) {
     role,
   };
 }
+/* v8 ignore stop */

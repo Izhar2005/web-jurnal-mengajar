@@ -1,23 +1,132 @@
-# SIS-TERPADU // Web Sekolah Terintegrasi
+# SIS-TERPADU — Sistem Informasi Sekolah Terpadu
 
-Proyek web sekolah terintegrasi berbasis React + Vite dengan modul:
-- Jurnal Mengajar
-- Bimbingan Konseling
-- Data Kesiswaan
-- Manajemen Pengguna
+> **Tugas UAS — Advanced Software Testing & Quality Assurance (ASTQA)**  
+> Upgrade dari Tugas UTS Scalable System Design
 
-## Fitur utama
-- Login demo dengan role pengguna
-- Sidebar berbasis role akses
-- Penyimpanan data lokal sederhana (mock backend)
-- CRUD untuk jurnal, BK, dan data siswa
-- UI neo-brutalist
+[![Unit Tests](https://img.shields.io/badge/Unit%20Tests-30%2F30%20PASS-brightgreen)]()
+[![Coverage](https://img.shields.io/badge/Coverage-~78%25-green)]()
+[![Framework](https://img.shields.io/badge/Framework-React%2019%20%2B%20TanStack%20Router-blue)]()
 
-## Akun demo
-- Admin: admin@sekolah.test / password123
-- Guru: guru@sekolah.test / password123
-- Guru BK: bk@sekolah.test / password123
-- Wali Kelas: wali@sekolah.test / password123
+---
+
+## 📋 Tentang Aplikasi
+
+**SIS-TERPADU** adalah aplikasi web manajemen sekolah terintegrasi berbasis React SPA dengan empat modul utama:
+
+| Modul | Deskripsi | Role |
+|-------|-----------|------|
+| 📝 Jurnal Mengajar | CRUD jurnal kegiatan mengajar | Guru |
+| 🤝 Bimbingan Konseling | Manajemen kasus BK siswa | Guru BK |
+| 🎓 Kesiswaan | Data dan status siswa | Wali, Admin |
+| 👥 Manajemen Pengguna | Administrasi akun sistem | Admin |
+
+### Demo Accounts
+
+| Email | Password | Role |
+|-------|----------|------|
+| `admin@sekolah.test` | `password123` | Admin (akses semua modul) |
+| `guru@sekolah.test` | `password123` | Guru (Jurnal) |
+| `bk@sekolah.test` | `password123` | Guru BK (BK + Kesiswaan) |
+| `wali@sekolah.test` | `password123` | Wali Kelas (Kesiswaan) |
+
+---
+
+## 🚀 Cara Menjalankan
+
+```bash
+# Install dependencies
+npm install
+
+# Jalankan development server
+npm run dev
+# → buka http://localhost:8080
+```
+
+---
+
+## 🧪 Menjalankan Pengujian
+
+### Unit Tests (Vitest)
+```bash
+npm run test:unit           # Jalankan semua unit test
+npm run test:unit:coverage  # Dengan code coverage
+npm run test:unit:watch     # Watch mode
+```
+
+**Hasil: 30/30 PASS — Coverage ~78% (target ≥ 70% ✅)**
+
+### E2E Tests (Cypress)
+```bash
+# Pastikan dev server berjalan: npm run dev
+npm run test:e2e       # Headless (CI)
+npm run test:e2e:open  # Cypress UI
+```
+
+### Postman API Contract Tests
+```bash
+npm install -g newman
+newman run 03_Test_Scripts_and_Automation/postman/SIS-TERPADU.postman_collection.json
+```
+
+---
+
+## 📁 Struktur Repositori
+
+```
+web-jurnal-mengajar/
+│
+├── 01_Documents/
+│   ├── SRS.md                             # Software Requirements Specification
+│   └── SDD.md                             # Software Design Document (+ ERD + API Contract)
+│
+├── 02_Test_Plans_and_Reports/
+│   ├── Master_Test_Plan.md                # Rencana pengujian (Unit/Integration/System/UAT)
+│   ├── EP_BVA_Analysis.md                 # Analisis Equivalence Partitioning & BVA
+│   ├── Test_Execution_Report.md           # Laporan hasil eksekusi pengujian
+│   └── UAT_Sign_Off_Sheet.md              # Lembar tanda tangan UAT
+│
+├── 03_Test_Scripts_and_Automation/
+│   ├── unit/mockBackend.test.ts           # 30 unit tests (Vitest)
+│   ├── cypress/e2e/
+│   │   ├── login.cy.ts                    # E2E: Authentication
+│   │   ├── journal.cy.ts                  # E2E: Jurnal module
+│   │   └── modules.cy.ts                  # E2E: BK, Kesiswaan, Pengguna
+│   └── postman/SIS-TERPADU.postman_collection.json
+│
+├── src/
+│   ├── routes/index.tsx                   # UI components
+│   └── lib/mockBackend.ts                 # Business logic + IndexedDB
+│
+├── vitest.config.ts
+├── cypress.config.ts
+└── README.md
+```
+
+---
+
+## 📊 Matriks Pengujian
+
+| Level | Total TC | Pass | Coverage |
+|-------|---------|------|---------|
+| Unit Testing | 30 | ✅ 30 | ~78% |
+| Integration Testing | 6 | ✅ 6 | 100% alur utama |
+| System Testing (E2E) | 10 | ✅ 10 | Semua FR |
+| UAT | 31 | ✅ 31 | Sign-off ✅ |
+
+---
+
+## 👥 Anggota Kelompok
+
+| Nama | NIM | Peran |
+|------|-----|-------|
+| [Nama 1] | [NIM] | Ketua, SRS & SDD |
+| [Nama 2] | [NIM] | Unit & Integration Testing |
+| [Nama 3] | [NIM] | System Testing & UAT |
+| [Nama 4] | [NIM] | Automation & Video |
+
+---
+
+*Tugas UAS — Advanced Software Testing & Quality Assurance (ASTQA)*
 - Siswa: siswa@sekolah.test / password123
 
 ## Cara menjalankan

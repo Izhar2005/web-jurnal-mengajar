@@ -1,0 +1,217 @@
+{
+  "info": {
+    "_postman_id": "sis-terpadu-astqa-2026",
+    "name": "SIS-TERPADU API Contract Tests",
+    "description": "Koleksi Postman untuk pengujian API Contract SIS-TERPADU.\nSaat ini aplikasi berjalan client-side (IndexedDB), koleksi ini mendefinisikan kontrak untuk migrasi ke REST API.\n\nJalankan dengan Newman:\n  npm install -g newman\n  newman run SIS-TERPADU.postman_collection.json",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api", "type": "string" },
+    { "key": "authToken", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/login — Valid Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok = true', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.ok).to.be.true;",
+                  "  pm.expect(body.user).to.have.property('email');",
+                  "  pm.expect(body.user.role).to.equal('admin');",
+                  "  pm.collectionVariables.set('authToken', body.token || '');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"admin@sekolah.test\", \"password\": \"password123\"}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/login — Wrong Password [EP-I]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('ok = false', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.ok).to.be.false;",
+                  "  pm.expect(body.message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"admin@sekolah.test\", \"password\": \"salah\"}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/login — Email Tidak Terdaftar [EP-I]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('ok = false dengan pesan', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.ok).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"notexist@school.com\", \"password\": \"password123\"}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Journal Entries",
+      "item": [
+        {
+          "name": "GET /journals — Daftar Jurnal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response berisi array data', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data).to.be.an('array');",
+                  "  pm.expect(body).to.have.property('total');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/journals",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "POST /journals — Simpan Jurnal Valid",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Entry dibuat dengan id', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.ok).to.be.true;",
+                  "  pm.expect(body.entry).to.have.property('id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/journals",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tanggal\": \"2026-07-30\", \"kelas\": \"IX-A\", \"mapel\": \"Matematika\", \"materi\": \"Aljabar\", \"metode\": \"Diskusi\", \"catatan\": \"Siswa aktif\"}"
+            }
+          }
+        },
+        {
+          "name": "POST /journals — Tanggal Masa Depan [BVA-I]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Ditolak dengan pesan validasi', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.ok).to.be.false;",
+                  "  pm.expect(body.message).to.include('masa depan');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/journals",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tanggal\": \"2099-12-31\", \"kelas\": \"IX-A\", \"mapel\": \"Matematika\", \"materi\": \"Aljabar\", \"metode\": \"Diskusi\", \"catatan\": \"Test\"}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users (Admin)",
+      "item": [
+        {
+          "name": "GET /users — Daftar Pengguna",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Array data pengguna', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data).to.be.an('array');",
+                  "  pm.expect(body.data.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        }
+      ]
+    }
+  ]
+}
